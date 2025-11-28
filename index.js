@@ -13,13 +13,14 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // --- Import routes ---
-const orderRoutes = require("./routes/OrderRoutes");
-const payfastRoutes = require("./routes/PayFastroutes"); 
+const orderRoutes = require("./routes/orderRoutes");
+const payfastRoutes = require("./routes/payFastRoutes");
 
 // --- MongoDB connection ---
-mongoose.connect(process.env.MONGO_URI)
-.then(() => console.log("MongoDB connected successfully"))
-.catch(err => console.error(" MongoDB connection error:", err));
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected successfully"))
+  .catch((err) => console.error(" MongoDB connection error:", err));
 
 // --- Use routes ---
 app.use("/api/orders", orderRoutes);
