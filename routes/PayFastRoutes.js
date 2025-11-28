@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { payfastRedirect, payfastCallback } = require("../controllers/PayFastController.js");
+const { payfastCallback, checkPaymentStatus } = require("../controllers/PayFastController.js");
 
-// Redirect user to PayFast payment page
-router.post("/redirect", payfastRedirect);
-
-// PayFast server calls this URL after payment
+// STEP 3: PayFast sends payment callback here (webhook)
 router.post("/callback", payfastCallback);
+
+// STEP 4: Frontend checks if payment was completed
+router.get("/:orderId/status", checkPaymentStatus);
 
 module.exports = router;

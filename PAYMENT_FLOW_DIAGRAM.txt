@@ -1,0 +1,339 @@
+================================================================================
+SECURE PAYFAST PAYMENT FLOW DIAGRAM
+================================================================================
+
+STEP 1: USER CREATES ORDER
+==========================
+
+Frontend (Browser)                      Backend (Node.js Server)
+   |                                          |
+   | POST /api/orders/create                  |
+   | {                                        |
+   |   userName: "Ali Khan"                   |
+   |   userPhone: "+923001234567"             |
+   |   totalAmount: 5000                      |
+   |   ticketsPurchased: [...]                |
+   | }                                        |
+   |-----────────────────────────────────────→|
+   |                                          | Create Order
+   |                                          | in MongoDB
+   |                                          |
+   |                                          | Generate orderId
+   |                                          | "ORD-1701184200000-432"
+   |                                          |
+   |  Response:                               |
+   |  {                                       |
+   |    orderId: "ORD-1701..."                |
+   |    totalAmount: 5000                     |
+   |    userName: "Ali Khan"                  |
+   |  }                                       |
+   |←─────────────────────────────────────────|
+   |                                          |
+   | Save orderId for next step                |
+   |                                          |
+
+
+STEP 2: GET PAYMENT LINK (SECURE)
+==================================
+
+Frontend                                Backend
+   |                                    |
+   | POST /api/orders/ORD-.../          |
+   |      initiate-payment              |
+   |──────────────────────────────────→|
+   |                                    |
+   |                                    | Read from .env:
+   |                                    | • PAYFAST_MERCHANT_ID ✓ Secret!
+   |                                    | • PAYFAST_MERCHANT_KEY ✓ Secret!
+   |                                    | • PAYFAST_PASSPHRASE ✓ Secret!
+   |                                    |
+   |                                    | Build PayFast data:
+   |                                    | {
+   |                                    |   merchant_id: "secret123"
+   |                                    |   merchant_key: "key456"
+   |                                    |   m_payment_id: "ORD-..."
+   |                                    |   amount: "5000.00"
+   |                                    |   ...
+   |                                    | }
+   |                                    |
+   |                                    | Generate MD5 signature
+   |                                    | using passphrase
+   |                                    |
+   |                                    | Build URL:
+   |                                    | https://www.payfast.pk/eng/process?
+   |                                    | merchant_id=...&signature=xyz&...
+   |                                    |
+   |  Response:                         |
+   |  {                                 |
+   |    payfastUrl: "https://www...." |
+   |  }                                 |
+   |                                    |
+   |  ⚠️ NOTE: NO credentials in       |
+   |  response! Only safe URL!          |
+   |←───────────────────────────────────|
+   |                                    |
+   | window.location.href = payfastUrl  |
+   | (Redirect user)                    |
+   |
+
+
+STEP 3: USER PAYS ON PAYFAST
+=============================
+
+Frontend                 PAYFAST                  Backend
+   |                       |                         |
+   | Redirect to           |                         |
+   | payfastUrl            |                         |
+   |───────────────────────→|                         |
+   |                       |                         |
+   |                       | User enters             |
+   |                       | card details            |
+   |                       | securely                |
+   |                       |                         |
+   |                       | Payment processing      |
+   |                       | (HTTPS encrypted)       |
+   |                       |                         |
+   |                       | Payment complete!       |
+   |                       |                         |
+   |                       | Send webhook callback:  |
+   |                       | POST /api/payfast/      |
+   |                       |      callback           |
+   |                       | {                       |
+   |                       |   m_payment_id: "..." | |
+   |                       |   payment_status: "..." |
+   |                       |   amount_gross: ...     |
+   |                       |   signature: "xyz..."   |
+   |                       | }                       |
+   |                       |─────────────────────────→|
+   |                       |                         | Verify signature:
+   |                       |                         | MD5(data + passphrase)
+   |                       |                         | == signature?
+   |                       |                         |
+   |                       |                         | ✓ YES: Trust payment
+   |                       |                         | ✗ NO: Reject payment
+   |                       |                         | (Log security alert!)
+   |                       |                         |
+   |                       |                         | Update order:
+   |                       |                         | status = "paid"
+   |                       |                         |
+   |                       |                         | Store PaymentRecord
+   |                       |                         | in database
+   |                       |                         |
+   |                       |←────────────── Response:
+   |                       |                "OK"
+   |                       |
+   | (Optional: Return user to specified URL)
+
+
+STEP 4: FRONTEND CHECKS PAYMENT STATUS
+=======================================
+
+Frontend                                Backend
+   |                                    |
+   | (User back on your site)           |
+   |                                    |
+   | Poll every 2 seconds:              |
+   | GET /api/payfast/ORD-.../status    |
+   |──────────────────────────────────→|
+   |                                    | Query order
+   |                                    | from database
+   |                                    |
+   |  Response:                         |
+   |  {                                 |
+   |    paymentStatus: "paid"           |
+   |  }                                 |
+   |←───────────────────────────────────|
+   |                                    |
+   | IF paymentStatus == "paid":        |
+   |   ✓ Show success page              |
+   |   ✓ Display order confirmation     |
+   |   ✓ Send confirmation email        |
+   |                                    |
+
+
+================================================================================
+SECURITY FLOW - KEY POINTS
+================================================================================
+
+⚠️ WHAT FRONTEND NEVER SEES:
+   ❌ PAYFAST_MERCHANT_ID
+   ❌ PAYFAST_MERCHANT_KEY
+   ❌ PAYFAST_PASSPHRASE
+   ❌ Signature generation logic
+
+✅ WHAT FRONTEND DOES:
+   ✓ Sends order data (tickets, name, phone)
+   ✓ Receives only orderId
+   ✓ Receives only payfastUrl
+   ✓ Receives only payment status
+   ✓ Never handles card data
+
+✅ WHAT BACKEND HANDLES:
+   ✓ Stores credentials securely in .env
+   ✓ Generates signatures on server
+   ✓ Verifies PayFast signatures
+   ✓ Updates order after payment
+   ✓ Maintains audit trail
+
+
+================================================================================
+CREDENTIAL PROTECTION
+================================================================================
+
+ENVIRONMENT VARIABLES (.env) - BACKEND ONLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+     .env File (Server)
+     ──────────────────
+     PAYFAST_MERCHANT_ID=abc123
+     PAYFAST_MERCHANT_KEY=secret456
+     PAYFAST_PASSPHRASE=xyz789
+          ↓
+     Only accessible in Node.js
+     Never sent to browser
+     Never in git repo (.gitignore)
+     Never in API responses
+
+
+SIGNATURE GENERATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+     Backend Process:
+     1. Read credentials from .env ✓
+     2. Build payment data
+     3. Add passphrase to data
+     4. Generate MD5 hash
+     5. Include hash in PayFast URL
+     6. Send URL to frontend (safe!)
+
+     Frontend:
+     - Just receives URL
+     - Can't generate signature
+     - Can't modify payment data
+
+
+SIGNATURE VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+     PayFast Server              Backend Server
+          ↓                             ↓
+     Generate signature      1. Receive callback
+     using their keys         2. Extract signature
+          ↓                    3. Regenerate signature
+     Send to backend          4. Compare signatures
+     with payment data        5. Trust if match!
+          ↓                    6. Reject if no match
+     (HTTPS encrypted)
+
+
+================================================================================
+COMPLETE FLOW DIAGRAM
+================================================================================
+
+                                SECURE
+                              PAYMENT
+                              PROCESS
+                                 │
+                    ┌────────────┴────────────┐
+                    │                         │
+                    ▼                         ▼
+                Frontend              Backend (Node.js)
+                (Browser)             (Express.js)
+                    │                         │
+                    │  1. Create Order        │
+                    ├────────────────────────→│
+                    │                    Save to MongoDB
+                    │  Return: orderId        │
+                    │←────────────────────────┤
+                    │                         │
+                    │  2. Initiate Payment    │
+                    ├────────────────────────→│
+                    │                    Read .env
+                    │                    Generate signature
+                    │  Return: payfastUrl    │
+                    │←────────────────────────┤
+                    │                         │
+                    │  3. Redirect            │
+                    ├──────────────────────────────────────→
+                    │                         │           PAYFAST
+                    │                         │           (Payment
+                    │  4. User enters card info           Gateway)
+                    │  5. Payment processed          │
+                    │                         │
+                    │                         │←─────────
+                    │                         │  Callback
+                    │                         │  Verify
+                    │                         │  signature
+                    │                         │  Update DB
+                    │                         │
+                    │  6. Check Status        │
+                    ├────────────────────────→│
+                    │  Return: paid           │
+                    │←────────────────────────┤
+                    │                         │
+                    ▼                         ▼
+                Show Success           Complete!
+
+
+================================================================================
+ERROR SCENARIOS
+================================================================================
+
+SCENARIO 1: Invalid Signature
+───────────────────────────────
+PayFast sends callback with tampered data
+     ↓
+Backend verifies signature
+     ↓
+Signature doesn't match
+     ↓
+✓ Payment REJECTED
+✓ Order stays as "pending"
+✓ Security alert logged
+✓ Attacker fails!
+
+
+SCENARIO 2: Fake Callback
+──────────────────────────
+Attacker tries to send fake payment notification
+     ↓
+Backend receives request
+     ↓
+Tries to verify signature with secret passphrase
+     ↓
+Can't generate matching signature
+     ↓
+✓ Request REJECTED
+✓ Order not updated
+✓ Fake payment fails!
+
+
+SCENARIO 3: Credential Exposure
+────────────────────────────────
+BEFORE (Insecure):
+   - Attacker finds merchant credentials in frontend
+   - Uses them to accept payments into their account
+   - Steals money!
+
+AFTER (Secure):
+   - Credentials only on backend
+   - Attacker can't access .env from browser
+   - Even if they get orderId, they can't generate
+     valid PayFast URL without credentials
+   - ✓ System secure!
+
+
+================================================================================
+KEY POINTS SUMMARY
+================================================================================
+
+✅ Backend generates all signatures (never frontend)
+✅ PayFast credentials NEVER exposed in API responses
+✅ Callback signatures ALWAYS verified
+✅ Environment variables used for credentials
+✅ HTTPS protects data in transit
+✅ Audit trail stored for every payment
+✅ Failed verifications logged
+✅ Frontend can't forge payments
+
+================================================================================

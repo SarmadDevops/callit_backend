@@ -1,0 +1,124 @@
+{
+  "info": {
+    "name": "PayFast Integration Testing",
+    "description": "Complete API testing collection for PayFast Payment Integration",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "TEST 1: Create Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userName\": \"Ali Khan\",\n  \"userPhone\": \"+923001234567\",\n  \"totalAmount\": 5000,\n  \"ticketsPurchased\": [\n    {\n      \"eventDay\": 1,\n      \"ticketType\": \"General\",\n      \"quantity\": 2,\n      \"names\": [\"Ali Khan\", \"Sara Khan\"],\n      \"price\": 2500\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/orders/create",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "orders",
+            "create"
+          ]
+        },
+        "description": "Creates a new ticket order. Returns orderId needed for next tests."
+      },
+      "response": []
+    },
+    {
+      "name": "TEST 2: Get Payment URL",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "http://localhost:5000/api/orders/{{orderId}}/initiate-payment",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "orders",
+            "{{orderId}}",
+            "initiate-payment"
+          ]
+        },
+        "description": "Gets PayFast payment URL. Replace {{orderId}} with orderId from TEST 1.\n\nInstructions:\n1. Run TEST 1 first\n2. Copy the orderId from response\n3. Set variable: orderId = your_order_id\n4. Run this test\n5. Copy payfastUrl for payment"
+      },
+      "response": []
+    },
+    {
+      "name": "TEST 3: Check Payment Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/payfast/{{orderId}}/status",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "payfast",
+            "{{orderId}}",
+            "status"
+          ]
+        },
+        "description": "Checks if payment was completed. Replace {{orderId}} with your orderId.\n\nExpected Responses:\n- Before payment: paymentStatus = \"pending\"\n- After payment: paymentStatus = \"paid\"\n- If canceled: paymentStatus = \"canceled\""
+      },
+      "response": []
+    },
+    {
+      "name": "Get Order Details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/orders/{{orderId}}",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "orders",
+            "{{orderId}}"
+          ]
+        },
+        "description": "Get full order details including all ticket information and payment status."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "orderId",
+      "value": "ORD-1701184200000-432",
+      "type": "string"
+    }
+  ]
+}

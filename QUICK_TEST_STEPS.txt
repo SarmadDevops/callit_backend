@@ -1,0 +1,313 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                    🧪 QUICK TESTING GUIDE (START HERE!)                     ║
+║                                                                              ║
+║                            Follow These Steps Now                           ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+
+STEP 1: CREATE .env FILE
+════════════════════════════════════════════════════════════════════════════════
+
+Copy the example:
+  → cp .env.example .env
+
+Edit .env and add this:
+
+  MONGO_URI=mongodb+srv://your_user:your_password@cluster.mongodb.net/callit_db
+  PORT=5000
+  PAYFAST_MERCHANT_ID=10000100
+  PAYFAST_MERCHANT_KEY=mk5p2pn4oe8rs
+  PAYFAST_PASSPHRASE=test
+  PAYFAST_RETURN_URL=http://localhost:3000/payment/success
+  PAYFAST_CANCEL_URL=http://localhost:3000/payment/cancel
+  PAYFAST_NOTIFY_URL=http://localhost:5000/api/payfast/callback
+
+Save the file!
+
+
+STEP 2: START THE SERVER
+════════════════════════════════════════════════════════════════════════════════
+
+In Terminal/Command Prompt:
+
+  npm start
+
+You should see:
+
+  > callit_new_web_backend@1.0.0 start
+  > node index.js
+
+   Server running on port 5000
+
+If MongoDB connected, you'll also see:
+
+  MongoDB connected successfully
+
+✅ Server is running! Keep this terminal open.
+
+
+STEP 3: OPEN ANOTHER TERMINAL
+════════════════════════════════════════════════════════════════════════════════
+
+Open a new terminal/command prompt and go to the same folder.
+You'll use this for testing commands (cURL or REST client).
+
+
+STEP 4: TEST 1 - CREATE ORDER
+════════════════════════════════════════════════════════════════════════════════
+
+Copy this command and paste in your second terminal:
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ curl -X POST http://localhost:5000/api/orders/create \                    │
+│   -H "Content-Type: application/json" \                                   │
+│   -d '{                                                                    │
+│     "userName": "Ali Khan",                                               │
+│     "userPhone": "+923001234567",                                         │
+│     "totalAmount": 5000,                                                  │
+│     "ticketsPurchased": [                                                 │
+│       {                                                                    │
+│         "eventDay": 1,                                                    │
+│         "ticketType": "General",                                          │
+│         "quantity": 2,                                                    │
+│         "names": ["Ali Khan", "Sara Khan"],                               │
+│         "price": 2500                                                     │
+│       }                                                                    │
+│     ]                                                                      │
+│   }'                                                                       │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Press Enter.
+
+Expected Response:
+┌────────────────────────────────────────────────────────────────────────────┐
+│ {                                                                          │
+│   "message": "Order created successfully",                                │
+│   "orderId": "ORD-1701184200000-432",                                     │
+│   "totalAmount": 5000,                                                    │
+│   "userName": "Ali Khan"                                                  │
+│ }                                                                          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+✅ SUCCESS! Copy the orderId (you'll need it in Step 5)
+
+Example: ORD-1701184200000-432
+
+
+STEP 5: TEST 2 - GET PAYMENT URL
+════════════════════════════════════════════════════════════════════════════════
+
+Replace ORD-xxxxx-xxx with your orderId from Step 4:
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ curl -X POST http://localhost:5000/api/orders/ORD-1701184200000-432/initiate-payment \
+│   -H "Content-Type: application/json"                                     │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Press Enter.
+
+Expected Response:
+┌────────────────────────────────────────────────────────────────────────────┐
+│ {                                                                          │
+│   "message": "Payment initiated",                                         │
+│   "payfastUrl": "https://www.payfast.pk/eng/process?merchant_id=..."     │
+│ }                                                                          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+✅ SUCCESS! The payfastUrl is generated on the backend.
+
+⚠️ NOTE: The URL contains the signature, but it was generated securely
+    on the backend, NOT in the browser.
+
+
+STEP 6: TEST 3 - CHECK PAYMENT STATUS
+════════════════════════════════════════════════════════════════════════════════
+
+Replace ORD-xxxxx-xxx with your orderId:
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ curl -X GET http://localhost:5000/api/payfast/ORD-1701184200000-432/status
+└────────────────────────────────────────────────────────────────────────────┘
+
+Press Enter.
+
+Expected Response:
+┌────────────────────────────────────────────────────────────────────────────┐
+│ {                                                                          │
+│   "orderId": "ORD-1701184200000-432",                                     │
+│   "paymentStatus": "pending",                                             │
+│   "totalAmount": 5000                                                     │
+│ }                                                                          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+✅ SUCCESS! Status is "pending" (waiting for payment).
+
+
+STEP 7: VERIFY SECURITY (IMPORTANT!)
+════════════════════════════════════════════════════════════════════════════════
+
+Open DevTools in your browser:
+  → Press F12 or Right-click → Inspect
+
+Go to Console tab and make a request:
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ fetch('http://localhost:5000/api/orders/create', {                        │
+│   method: 'POST',                                                         │
+│   headers: { 'Content-Type': 'application/json' },                        │
+│   body: JSON.stringify({                                                  │
+│     userName: 'Test',                                                     │
+│     userPhone: '+923001234567',                                           │
+│     totalAmount: 5000,                                                    │
+│     ticketsPurchased: [{                                                  │
+│       eventDay: 1,                                                        │
+│       ticketType: 'General',                                              │
+│       quantity: 1,                                                        │
+│       names: ['Test'],                                                    │
+│       price: 5000                                                         │
+│     }]                                                                     │
+│   })                                                                       │
+│ }).then(r => r.json()).then(d => console.log(d))                          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Paste this in console and press Enter.
+
+Check the response:
+  ✅ Should show orderId
+  ✅ Should NOT show PAYFAST_MERCHANT_ID
+  ✅ Should NOT show PAYFAST_MERCHANT_KEY
+  ✅ Should NOT show PAYFAST_PASSPHRASE
+
+Perfect! Your credentials are SAFE!
+
+
+STEP 8: TEST WITH VISUAL INTERFACE (OPTIONAL)
+════════════════════════════════════════════════════════════════════════════════
+
+Create a file called test-payment.html in your project folder.
+
+Copy content from TESTING_GUIDE.md → "Phase 5: Test with Frontend"
+
+Open in browser:
+  → Double-click the file or
+  → Open in browser: file:///full/path/to/test-payment.html
+
+Click buttons in order:
+  1. "Create Test Order"
+  2. "Get Payment Link"
+  3. "Check Payment Status"
+
+Watch the output appear!
+
+
+STEP 9: TEST FULL PAYMENT (OPTIONAL - REAL TEST)
+════════════════════════════════════════════════════════════════════════════════
+
+If you want to actually test payment:
+
+1. Get the payfastUrl from Step 5
+2. Paste it in your browser
+3. You'll see PayFast payment page
+4. Use test card:
+   - Card: 4111 1111 1111 1111
+   - Exp: 12/25 (any future date)
+   - CVC: 123 (any 3 digits)
+5. Complete payment
+6. You'll be redirected back
+7. Check order status (Step 6) - should now be "paid"
+
+
+STEP 10: VERIFY IN DATABASE (OPTIONAL)
+════════════════════════════════════════════════════════════════════════════════
+
+Connect to your MongoDB using MongoDB Compass or a client.
+
+Collections to check:
+
+1. orders
+   └─ Should have your test order
+   └─ paymentStatus: "paid" (if you completed payment in Step 9)
+
+2. paymentrecords
+   └─ Should have PayFast callback data
+   └─ Shows full payment transaction details
+
+
+TROUBLESHOOTING
+════════════════════════════════════════════════════════════════════════════════
+
+❌ Server won't start?
+   → Check .env MONGO_URI is correct
+   → Check MongoDB is running
+   → Check port 5000 is not in use
+
+❌ cURL command not recognized?
+   → On Windows: Install Git Bash or use Postman instead
+   → On Mac/Linux: cURL should be built-in
+
+❌ "Order not found" error?
+   → Copy orderId exactly from Step 4
+   → Don't edit or change it
+
+❌ CORS error in browser?
+   → CORS is already configured
+   → Make sure backend is running
+
+❌ API returns empty response?
+   → Check server logs in first terminal
+   → Look for error messages
+
+❌ Payment status still shows "pending" after payment?
+   → PayFast test callback might not be triggered
+   → In production with real credentials, it will work
+   → For now, manual check in database is fine
+
+
+QUICK SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+✅ Step 1: Setup .env (2 minutes)
+✅ Step 2: Start server (30 seconds)
+✅ Step 3: Open second terminal (30 seconds)
+✅ Step 4: Test create order (1 minute)
+✅ Step 5: Test get payment URL (1 minute)
+✅ Step 6: Test check status (1 minute)
+✅ Step 7: Verify security (2 minutes)
+✅ Step 8: Visual test (optional, 5 minutes)
+✅ Step 9: Full payment test (optional, 10 minutes)
+✅ Step 10: Database check (optional, 5 minutes)
+
+Total Time: 10-30 minutes depending on how thorough you want to be
+
+
+WHAT YOU'LL HAVE PROVEN
+════════════════════════════════════════════════════════════════════════════════
+
+✅ Backend API works
+✅ Orders can be created
+✅ Payment URLs generate securely
+✅ Payment status can be checked
+✅ Credentials are NOT exposed
+✅ Everything is ready for production
+
+
+NEXT STEPS
+════════════════════════════════════════════════════════════════════════════════
+
+1. Complete all the testing steps above
+2. Read TESTING_GUIDE.md for detailed info
+3. Read README_PAYFAST.md for full overview
+4. When ready: Deploy to production
+5. Update PayFast with production URLs
+6. Go live!
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+                        Ready to test? Start with Step 1! 🚀
+
+                       Follow each step exactly as written.
+
+═══════════════════════════════════════════════════════════════════════════════

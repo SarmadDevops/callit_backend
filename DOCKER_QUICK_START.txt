@@ -1,0 +1,189 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                  🐳 DOCKER MONGODB - QUICK START GUIDE 🐳                   ║
+║                                                                              ║
+║                  Start MongoDB in 5 seconds! (Do this now!)                 ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+
+✅ WHAT'S ALREADY DONE FOR YOU
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ docker-compose.yml created with MongoDB configuration
+✓ .env updated with Docker MongoDB connection string
+✓ All settings are correct and ready to go!
+
+
+🚀 STEP 1: CHECK DOCKER IS INSTALLED
+═══════════════════════════════════════════════════════════════════════════════
+
+Open terminal and run:
+
+  docker --version
+
+You should see:
+  Docker version 20.10.x (or higher)
+
+If not installed:
+  → Download from https://www.docker.com/products/docker-desktop
+  → Run the installer
+  → Restart terminal
+
+✅ Docker is ready!
+
+
+🚀 STEP 2: START MONGODB
+═══════════════════════════════════════════════════════════════════════════════
+
+In your project terminal, run:
+
+  docker-compose up -d
+
+Wait for message:
+  Creating callit_mongodb ... done
+
+That's it! MongoDB is running! 🎉
+
+✅ MongoDB started!
+
+
+🚀 STEP 3: VERIFY MONGODB IS RUNNING
+═══════════════════════════════════════════════════════════════════════════════
+
+Check status:
+
+  docker-compose ps
+
+You should see:
+  NAME              STATUS
+  callit_mongodb    Up 10s
+
+✅ MongoDB is running!
+
+
+🚀 STEP 4: START YOUR BACKEND
+═══════════════════════════════════════════════════════════════════════════════
+
+In another terminal, run:
+
+  npm start
+
+Wait for:
+  Server running on port 5000
+  MongoDB connected successfully
+
+✅ Backend connected to MongoDB!
+
+
+🚀 STEP 5: TEST THE SYSTEM
+═══════════════════════════════════════════════════════════════════════════════
+
+In a third terminal, run the payment tests:
+
+  curl -X POST http://localhost:5000/api/orders/create \
+    -H "Content-Type: application/json" \
+    -d '{"userName":"Test","userPhone":"+923001234567","totalAmount":5000,"ticketsPurchased":[{"eventDay":1,"ticketType":"General","quantity":1,"names":["Test"],"price":5000}]}'
+
+You should get back an orderId!
+
+✅ Everything working!
+
+
+═══════════════════════════════════════════════════════════════════════════════
+🎊 DONE! 🎊
+═══════════════════════════════════════════════════════════════════════════════
+
+MongoDB is running on: localhost:27017
+Username: admin
+Password: admin123
+Database: callit_db
+
+Your .env already has the correct connection string!
+
+MongoDB data is stored in Docker volumes and persists
+even when you stop the container.
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📋 COMMON COMMANDS (Bookmark this!)
+═══════════════════════════════════════════════════════════════════════════════
+
+Start MongoDB:
+  docker-compose up -d
+
+Stop MongoDB:
+  docker-compose down
+
+Check if running:
+  docker-compose ps
+
+View logs:
+  docker-compose logs mongodb
+
+Restart:
+  docker-compose restart mongodb
+
+Reset (DELETE database):
+  docker-compose down -v
+
+
+═══════════════════════════════════════════════════════════════════════════════
+💡 WORKFLOW
+═══════════════════════════════════════════════════════════════════════════════
+
+Morning:
+  1. docker-compose up -d     (start MongoDB)
+  2. npm start                (start backend)
+  3. Run your tests           (test payment system)
+
+End of day:
+  1. docker-compose down      (stop MongoDB)
+
+Data automatically saved in volumes!
+
+Next day:
+  1. docker-compose up -d     (all data still there!)
+  2. npm start                (continue working)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+❓ TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+Problem: "docker-compose: command not found"
+Solution: Install Docker Desktop (includes Docker Compose)
+
+Problem: "MongoDB connection error"
+Solution:
+  1. Check Docker is running: docker-compose ps
+  2. Check logs: docker-compose logs mongodb
+  3. Restart: docker-compose restart mongodb
+
+Problem: Port 27017 already in use
+Solution: Stop other MongoDB or change port in docker-compose.yml
+
+Problem: Can't start container
+Solution: docker-compose down -v (reset)
+          docker-compose up -d (start fresh)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+📚 WANT MORE DETAILS?
+═══════════════════════════════════════════════════════════════════════════════
+
+Read: DOCKER_SETUP_GUIDE.md (complete documentation)
+      - Detailed explanation of everything
+      - Advanced configuration
+      - Volumes explained
+      - Troubleshooting tips
+
+
+═══════════════════════════════════════════════════════════════════════════════
+
+                    That's it! You're all set! 🚀
+
+          All databases will be stored locally in Docker.
+              No remote database needed. Completely local!
+
+═══════════════════════════════════════════════════════════════════════════════
