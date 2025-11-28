@@ -2,7 +2,7 @@ const Order = require("../models/Order");
 const crypto = require("crypto");
 
 const PaymentRecord = require("../models/PaymentRecord");
-const { generateSignature, buildPayFastURL } = require("../utils/Payfast");
+const { generateSignature, buildPayFastURL } = require("../utils/payFast");
 
 // Generate unique OrderId
 const generateOrderId = () => {
@@ -52,15 +52,13 @@ exports.createOrder = async (req, res) => {
     res.status(201).json({
       message: "Order created successfully",
       order,
-      payfastUrl
+      payfastUrl,
     });
-
   } catch (error) {
     console.error("Error creating order:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 // GET /api/orders/:orderId
 exports.getOrder = async (req, res) => {
@@ -71,7 +69,6 @@ exports.getOrder = async (req, res) => {
     if (!order) return res.status(404).json({ message: "Order not found" });
 
     res.status(200).json(order);
-
   } catch (error) {
     console.error("Error fetching order:", error);
     res.status(500).json({ message: "Server error" });
