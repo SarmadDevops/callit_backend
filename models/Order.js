@@ -9,41 +9,41 @@ const OrderSchema = new mongoose.Schema({
 
   userName: {
     type: String,
-    required: true,
+    required: false,
   },
 
   userPhone: {
     type: String,
-    required: true,
+    required: false,
   },
 
  
   ticketsPurchased: [{
     eventDay: {
       type: Number,
-      required: true
+      required: false
     },
     ticketType: {
       type: String,
-      required: true
+      required: false
     },
     quantity: {
       type: Number,
-      required: true
+      required: false
     },
     names: {
       type: [String],
-      required: true
+      required: false
     },
     price: {
       type: Number,
-      required: true
+      required: false
     }
   }],
 
   totalAmount: {
     type: Number,
-    required: true,
+    required: false,
   },
 
   paymentStatus: {
@@ -58,6 +58,11 @@ const OrderSchema = new mongoose.Schema({
   },
 
   dateCreated: {
+    type: Date,
+    default: Date.now,
+  },
+
+  updatedAt: {
     type: Date,
     default: Date.now,
   },

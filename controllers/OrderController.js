@@ -1,8 +1,5 @@
 const Order = require("../models/Order");
-const crypto = require("crypto");
-
 const PaymentRecord = require("../models/PaymentRecord");
-const { generateSignature, buildPayFastURL } = require("../utils/Payfast");
 
 // Generate unique OrderId
 const generateOrderId = () => {
@@ -14,8 +11,8 @@ exports.createOrder = async (req, res) => {
   try {
     const { userName, userPhone, totalAmount, ticketsPurchased } = req.body;
 
-    if (!userName || !userPhone || !totalAmount || !ticketsPurchased) {
-      return res.status(400).json({ message: "Invalid order data" });
+    if (!userName || !userPhone || !totalAmount || !ticketsPurchased || !Array.isArray(ticketsPurchased)) {
+      return res.status(400).json({ message: "Invalid order data. ticketsPurchased must be an array of ticket objects" });
     }
 
     // Create order in DB
@@ -30,33 +27,15 @@ exports.createOrder = async (req, res) => {
 
     await order.save();
 
-    // Prepare PayFast data
-    const pfData = {
-      merchant_id: process.env.PAYFAST_MERCHANT_ID,
-      merchant_key: process.env.PAYFAST_MERCHANT_KEY,
-      return_url: process.env.PAYFAST_RETURN_URL,
-      cancel_url: process.env.PAYFAST_CANCEL_URL,
-      notify_url: process.env.PAYFAST_NOTIFY_URL,
-      name_first: order.userName,
-      email_address: "", // optional
-      m_payment_id: order.orderId,
-      amount: order.totalAmount.toFixed(2),
-      item_name: "Goonj Event Tickets",
-    };
-
-    // Generate signature & URL
-    pfData.signature = generateSignature(pfData);
-    const payfastUrl = buildPayFastURL(pfData);
-
-    // Return order + PayFast URL
+    // Return order created (payment initialization happens in separate API call)
     res.status(201).json({
       message: "Order created successfully",
       order,
-      payfastUrl,
+      nextStep: "Call /api/payfast/initialize with this orderId to proceed with payment",
     });
   } catch (error) {
     console.error("Error creating order:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 

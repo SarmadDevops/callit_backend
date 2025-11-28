@@ -1,32 +1,55 @@
 const crypto = require("crypto");
-const querystring = require("querystring");
 
-// Generate signature
-exports.generateSignature = (data) => {
-  const sortedKeys = Object.keys(data).sort();
-  const paramString = sortedKeys
-    .map(key => `${key}=${encodeURIComponent(data[key]).replace(/%20/g, "+")}`)
-    .join("&");
+// Generate MD5 signature for PayFast (EXACT order required)
+const generateSignature = (data) => {
+  // CRITICAL: Fields must be in this EXACT order for PayFast
+  const signatureString =
+    `merchant_id=${data.merchant_id}&` +
+    `merchant_key=${data.merchant_key}&` +
+    `return_url=${encodeURIComponent(data.return_url)}&` +
+    `cancel_url=${encodeURIComponent(data.cancel_url)}&` +
+    `notify_url=${encodeURIComponent(data.notify_url)}&` +
+    `name_first=${encodeURIComponent(data.name_first)}&` +
+    `name_last=${encodeURIComponent(data.name_last)}&` +
+    `email_address=${encodeURIComponent(data.email_address)}&` +
+    `m_payment_id=${data.m_payment_id}&` +
+    `amount=${data.amount}&` +
+    `item_name=${encodeURIComponent(data.item_name)}&` +
+    `item_description=${encodeURIComponent(data.item_description)}`;
 
-  const passphrase = process.env.PAYFAST_PASSPHRASE || "";
-  const fullString = paramString + (passphrase ? `&passphrase=${passphrase}` : "");
-
-  return crypto.createHash("md5").update(fullString).digest("hex");
+  // Generate MD5 hash
+  return crypto.createHash("md5").update(signatureString).digest("hex");
 };
 
-// Verify signature
-exports.verifySignature = (data) => {
-  const pfData = { ...data };
-  const receivedSignature = pfData.signature;
-  delete pfData.signature;
+// Verify signature from callback (from PayFast)
+const verifySignature = (data) => {
+  const signature = data.signature;
 
-  const calculatedSignature = exports.generateSignature(pfData);
-  return receivedSignature === calculatedSignature;
+  // Create copy without signature for verification
+  const dataCopy = { ...data };
+  delete dataCopy.signature;
+
+  const recalculatedSignature = generateSignature(dataCopy);
+  return signature === recalculatedSignature;
 };
 
-// Build PayFast redirect URL
-exports.buildPayFastURL = (pfData) => {
-  return "https://www.payfast.pk/eng/process?" + querystring.stringify(pfData);
+// Build PayFast PK checkout URL
+const buildPayFastURL = (data) => {
+  // PayFast Pakistan endpoints
+  const checkoutUrl =
+    process.env.NODE_ENV === "production"
+      ? "https://ipg.apps.net.pk/Ecommerce/api/Transaction/PostTransaction"
+      : "https://ipg.apps.net.pk/Ecommerce/api/Transaction/PostTransaction";
+
+  // Return checkout URL with form data to be submitted from frontend
+  return {
+    checkoutUrl: checkoutUrl,
+    formData: data // Contains merchant_id, merchant_key, signature, etc.
+  };
 };
 
-
+module.exports = {
+  generateSignature,
+  verifySignature,
+  buildPayFastURL,
+};

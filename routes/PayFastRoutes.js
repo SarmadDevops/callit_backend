@@ -1,11 +1,38 @@
 const express = require("express");
 const router = express.Router();
-const { payfastRedirect, payfastCallback } = require("../controllers/PayFastController.js");
+const {
+  getAccessToken,
+  initializePayment,
+  getPaymentStatus,
+  getAllPayments,
+  payfastCallback,
+  retryPayment,
+  cancelPayment,
+  payfastRedirect,
+} = require("../controllers/PayFastController.js");
 
-// Redirect user to PayFast payment page
+// STEP 1: Get access token from PayFast Pakistan
+router.post("/get-token", getAccessToken);
+
+// STEP 2: Initialize payment with access token
+router.post("/initialize", initializePayment);
+
+// CREATE: Alias for backward compatibility
 router.post("/redirect", payfastRedirect);
 
-// PayFast server calls this URL after payment
+// READ: Get payment status for a specific order
+router.get("/status/:orderId", getPaymentStatus);
+
+// READ: Get all payments with optional filters
+router.get("/list", getAllPayments);
+
+// UPDATE: PayFast callback (server-to-server)
 router.post("/callback", payfastCallback);
+
+// UPDATE: Retry payment for a failed order
+router.post("/retry", retryPayment);
+
+// DELETE: Cancel payment for an order
+router.delete("/cancel/:orderId", cancelPayment);
 
 module.exports = router;

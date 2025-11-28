@@ -1,0 +1,286 @@
+{
+  "info": {
+    "name": "Callit Backend API - PayFast Pakistan Integration",
+    "description": "Complete API collection for testing Callit Backend with PayFast Pakistan payment gateway. Uses grant_type: client_credentials flow.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "1. Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"Ali Ahmed\",\n  \"userPhone\": \"+923005551234\",\n  \"totalAmount\": 1000,\n  \"ticketsPurchased\": [\n    {\n      \"ticketId\": \"T1\",\n      \"quantity\": 2,\n      \"price\": 500\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/orders/create",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "orders", "create"]
+            },
+            "description": "Create a new order for event tickets. Copy the orderId from the response to use in PayFast endpoints."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/ORD-1764355438292-685",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "orders", "ORD-1764355438292-685"]
+            },
+            "description": "Retrieve order details by Order ID. Replace ORD-1764355438292-685 with actual Order ID from create order response."
+          },
+          "response": []
+        }
+      ],
+      "description": "Order Management - Create and retrieve orders"
+    },
+    {
+      "name": "PayFast Pakistan - Token Flow",
+      "item": [
+        {
+          "name": "STEP 1: Get Access Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORD-1764355438292-685\",\n  \"amount\": 1000,\n  \"customerIp\": \"192.168.1.1\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/get-token",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "get-token"]
+            },
+            "description": "Get access token from PayFast Pakistan using grant_type: client_credentials.\n\nRequired Parameters:\n- orderId: Order ID from Create Order\n- amount: Total amount (integer)\n- customerIp: Customer IP address (optional)\n\nReturns:\n- token: Access token\n- refresh_token: Token for refreshing\n- expiry: Token expiry time in seconds"
+          },
+          "response": []
+        },
+        {
+          "name": "STEP 2: Initialize Payment (Get Form Data)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORD-1764355438292-685\",\n  \"email_address\": \"customer@example.com\",\n  \"token\": \"PASTE_TOKEN_FROM_STEP_1_HERE\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/initialize",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "initialize"]
+            },
+            "description": "Initialize payment with the access token from Step 1.\n\nRequired Parameters:\n- orderId: Order ID\n- email_address: Customer email\n- token: Access token from Step 1 response\n\nReturns:\n- checkoutUrl: PayFast endpoint to submit form to\n- formData: All required form fields for PostTransaction"
+          },
+          "response": []
+        }
+      ],
+      "description": "PayFast Pakistan - 2-Step Token-Based Flow"
+    },
+    {
+      "name": "PayFast Pakistan - Payment Management",
+      "item": [
+        {
+          "name": "Get Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/status/ORD-1764355438292-685",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "status", "ORD-1764355438292-685"]
+            },
+            "description": "Get payment status for a specific order. Replace orderId with actual Order ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/list",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "list"]
+            },
+            "description": "Get all payment records. Optional query parameters: status, orderId"
+          },
+          "response": []
+        },
+        {
+          "name": "Retry Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORD-1764355438292-685\",\n  \"email_address\": \"customer@example.com\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/retry",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "retry"]
+            },
+            "description": "Retry payment for a failed order. Returns new payment form data."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Payment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/cancel/ORD-1764355438292-685",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "cancel", "ORD-1764355438292-685"]
+            },
+            "description": "Cancel payment for an order. Only works for pending/failed orders."
+          },
+          "response": []
+        }
+      ],
+      "description": "PayFast Pakistan - Payment Status and Management"
+    },
+    {
+      "name": "PayFast Pakistan - Callbacks",
+      "item": [
+        {
+          "name": "PayFast Callback (Server-to-Server)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"m_payment_id\": \"ORD-1764355438292-685\",\n  \"pf_payment_id\": \"1234567890\",\n  \"payment_status\": \"COMPLETE\",\n  \"item_name\": \"Event Tickets\",\n  \"item_description\": \"Event ticket payment\",\n  \"amount_gross\": \"1000\",\n  \"amount_fee\": \"50\",\n  \"amount_net\": \"950\",\n  \"name_first\": \"Ali\",\n  \"name_last\": \"Ahmed\",\n  \"email_address\": \"customer@example.com\",\n  \"merchant_id\": \"243483\",\n  \"signature\": \"test_signature\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/callback",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "callback"]
+            },
+            "description": "PayFast callback endpoint - Called by PayFast server after payment processing. This is server-to-server communication."
+          },
+          "response": []
+        },
+        {
+          "name": "PayFast Redirect (Backward Compatibility)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORD-1764355438292-685\",\n  \"email_address\": \"customer@example.com\",\n  \"token\": \"PASTE_TOKEN_FROM_GET_TOKEN_HERE\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/redirect",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "redirect"]
+            },
+            "description": "Alias for initialize endpoint (same as STEP 2). Kept for backward compatibility."
+          },
+          "response": []
+        }
+      ],
+      "description": "PayFast Pakistan - Callback and Redirect Endpoints"
+    },
+    {
+      "name": "System Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": [""]
+        },
+        "description": "Health check - Verify if backend server is running"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "order_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
