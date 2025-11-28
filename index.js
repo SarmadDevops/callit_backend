@@ -13,8 +13,8 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // --- Import routes ---
-const orderRoutes = require("./routes/orderRoutes");
-const payfastRoutes = require("./routes/payFastRoutes"); 
+const orderRoutes = require("./routes/OrderRoutes");
+const payfastRoutes = require("./routes/PayFastroutes"); 
 
 // --- MongoDB connection ---
 mongoose.connect(process.env.MONGO_URI)
