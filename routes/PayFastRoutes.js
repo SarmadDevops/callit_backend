@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { payfastRedirect, payfastCallback } = require("../controllers/payFastController.js");
+const { payfastRedirect, payfastCallback } = require("../controllers/PayFastController.js");
 
 // Redirect user to PayFast payment page
 router.post("/redirect", payfastRedirect);

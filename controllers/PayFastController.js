@@ -5,7 +5,7 @@ const {
   generateSignature,
   verifySignature,
   buildPayFastURL,
-} = require("../utils/payFast");
+} = require("../utils/Payfast");
 
 exports.payfastRedirect = async (req, res) => {
   try {

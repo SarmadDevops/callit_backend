@@ -2,7 +2,7 @@ const Order = require("../models/Order");
 const crypto = require("crypto");
 
 const PaymentRecord = require("../models/PaymentRecord");
-const { generateSignature, buildPayFastURL } = require("../utils/payFast");
+const { generateSignature, buildPayFastURL } = require("../utils/Payfast");
 
 // Generate unique OrderId
 const generateOrderId = () => {
