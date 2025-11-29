@@ -39,6 +39,52 @@ exports.createOrder = async (req, res) => {
   }
 };
 
+// GET /api/orders/
+exports.getAllOrders = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const paymentStatus = req.query.paymentStatus;
+
+    // Build filter query
+    let query = {};
+    if (paymentStatus) {
+      query.paymentStatus = paymentStatus;
+    }
+
+    // Get total count for pagination
+    const total = await Order.countDocuments(query);
+
+    // Fetch orders with pagination
+    const orders = await Order.find(query)
+      .sort({ dateCreated: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Calculate pagination info
+    const totalPages = Math.ceil(total / limit);
+    const hasNextPage = page < totalPages;
+    const hasPrevPage = page > 1;
+
+    res.status(200).json({
+      message: "Orders fetched successfully",
+      pagination: {
+        currentPage: page,
+        limit: limit,
+        total: total,
+        totalPages: totalPages,
+        hasNextPage: hasNextPage,
+        hasPrevPage: hasPrevPage,
+      },
+      orders: orders,
+    });
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
 // GET /api/orders/:orderId
 exports.getOrder = async (req, res) => {
   try {

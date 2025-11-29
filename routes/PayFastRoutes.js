@@ -9,6 +9,7 @@ const {
   retryPayment,
   cancelPayment,
   payfastRedirect,
+  checkTransactionStatus,
 } = require("../controllers/PayFastController.js");
 
 // STEP 1: Get access token from PayFast Pakistan
@@ -34,5 +35,8 @@ router.post("/retry", retryPayment);
 
 // DELETE: Cancel payment for an order
 router.delete("/cancel/:orderId", cancelPayment);
+
+// READ: Check transaction status by basket_id (from PayFast official documentation)
+router.get("/transaction-status/:basketId", checkTransactionStatus);
 
 module.exports = router;

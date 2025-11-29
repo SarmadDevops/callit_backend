@@ -57,6 +57,11 @@ const OrderSchema = new mongoose.Schema({
     default: "PayFast",
   },
 
+  transactionId: {
+    type: String,
+    default: null,
+  },
+
   dateCreated: {
     type: Date,
     default: Date.now,

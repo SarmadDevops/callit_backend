@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "Callit Backend API - Latest",
-    "description": "Complete API collection for Callit Event Ticket Booking System with PayFast Payment Gateway",
-    "version": "2.0.0",
+    "name": "Callit Backend API - v2.1",
+    "description": "Complete API collection for Callit Event Ticket Booking System with PayFast Payment Gateway - Updated with Get All Orders endpoint",
+    "version": "2.1.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -57,7 +57,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5000/api/orders?page=1&limit=10&paymentStatus=pending",
+              "raw": "http://localhost:5000/api/orders?page=1&limit=10",
               "protocol": "http",
               "host": ["localhost"],
               "port": "5000",
@@ -81,7 +81,97 @@
                 }
               ]
             },
-            "description": "Get all orders with pagination. Supports filtering by payment status. Returns pagination metadata."
+            "description": "Get all orders with pagination. Supports filtering by payment status. Returns pagination metadata with total count, current page, and next/previous page info."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Orders - Pending Only",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/orders?page=1&limit=10&paymentStatus=pending",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "paymentStatus",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Get all pending orders with pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Orders - Paid Only",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/orders?page=1&limit=10&paymentStatus=paid",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "paymentStatus",
+                  "value": "paid"
+                }
+              ]
+            },
+            "description": "Get all paid orders with pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Orders - Failed Only",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/orders?page=1&limit=10&paymentStatus=failed",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "paymentStatus",
+                  "value": "failed"
+                }
+              ]
+            },
+            "description": "Get all failed orders with pagination"
           },
           "response": []
         },
