@@ -1,0 +1,392 @@
+{
+  "info": {
+    "name": "Call IT Events API - v4.0",
+    "description": "Complete API collection for Call IT Events backend with PayFast payment gateway integration. NEW: Update payment status endpoint to change order status from pending to completed.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "4.0.0",
+    "updated": "2025-11-29"
+  },
+  "item": [
+    {
+      "name": "PayFast Payment Flow",
+      "description": "PayFast payment gateway endpoints",
+      "item": [
+        {
+          "name": "1. Get Access Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORDER-123456\",\n  \"amount\": 5000\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/get-token",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "get-token"]
+            },
+            "description": "Get access token from PayFast Pakistan for initiating payment"
+          },
+          "response": []
+        },
+        {
+          "name": "2. Initialize Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORDER-123456\",\n  \"email_address\": \"customer@example.com\",\n  \"token\": \"ACCESS_TOKEN_FROM_STEP_1\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/initialize",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "initialize"]
+            },
+            "description": "Initialize payment form with access token. Use token from Step 1."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Update Payment Status (NEW) ⭐",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORDER-123456\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/update-status",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "update-status"]
+            },
+            "description": "Update order status from PENDING to COMPLETED. Pass orderId in the request body. Order status will be changed to 'completed'."
+          },
+          "response": []
+        },
+        {
+          "name": "PayFast Callback (Server-to-Server)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "m_payment_id",
+                  "value": "ORDER-123456"
+                },
+                {
+                  "key": "pf_payment_id",
+                  "value": "1234567890"
+                },
+                {
+                  "key": "payment_status",
+                  "value": "COMPLETE"
+                },
+                {
+                  "key": "email_address",
+                  "value": "customer@example.com"
+                },
+                {
+                  "key": "signature",
+                  "value": "test-signature"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/callback",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "callback"]
+            },
+            "description": "PayFast server-to-server callback endpoint. Called by PayFast after payment completion."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/status/ORDER-123456",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "status", "ORDER-123456"]
+            },
+            "description": "Get payment status for a specific order"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/list?status=completed&orderId=ORDER-123456",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "list"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "completed",
+                  "disabled": false
+                },
+                {
+                  "key": "orderId",
+                  "value": "ORDER-123456",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Get all payments with optional filters (status, orderId)"
+          },
+          "response": []
+        },
+        {
+          "name": "Retry Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"ORDER-123456\",\n  \"email_address\": \"customer@example.com\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/retry",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "retry"]
+            },
+            "description": "Generate retry payment link for failed orders"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Payment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/cancel/ORDER-123456",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "cancel", "ORDER-123456"]
+            },
+            "description": "Cancel payment for a pending or failed order"
+          },
+          "response": []
+        },
+        {
+          "name": "Check Transaction Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/payfast/transaction-status/ORDER-123456?orderDate=2025-11-29",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "payfast", "transaction-status", "ORDER-123456"],
+              "query": [
+                {
+                  "key": "orderDate",
+                  "value": "2025-11-29"
+                }
+              ]
+            },
+            "description": "Check transaction status from PayFast using basket_id and order date"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "description": "Order management endpoints",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"John Doe\",\n  \"userPhone\": \"+923001234567\",\n  \"userEmail\": \"john@example.com\",\n  \"ticketsPurchased\": [\n    {\n      \"eventDay\": 1,\n      \"ticketType\": \"VIP\",\n      \"quantity\": 2,\n      \"names\": [\"John Doe\", \"Jane Doe\"],\n      \"price\": 2500\n    }\n  ],\n  \"totalAmount\": 5000\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/orders",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "orders"]
+            },
+            "description": "Create a new order (status will be 'pending' by default)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/ORDER-123456",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "orders", "ORDER-123456"]
+            },
+            "description": "Get order details by order ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/orders",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "orders"]
+            },
+            "description": "Get all orders"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"John Updated\",\n  \"userPhone\": \"+923009876543\",\n  \"ticketsPurchased\": [\n    {\n      \"eventDay\": 1,\n      \"ticketType\": \"VIP\",\n      \"quantity\": 3,\n      \"names\": [\"John\", \"Jane\", \"Jack\"],\n      \"price\": 2500\n    }\n  ],\n  \"totalAmount\": 7500\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/orders/ORDER-123456",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "orders", "ORDER-123456"]
+            },
+            "description": "Update an existing order"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Order",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/api/orders/ORDER-123456",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": ["api", "orders", "ORDER-123456"]
+            },
+            "description": "Delete an order"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Server Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:5000/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "5000",
+              "path": [""]
+            },
+            "description": "Check if backend server is running"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "ORDER-123456",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "customer@example.com",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

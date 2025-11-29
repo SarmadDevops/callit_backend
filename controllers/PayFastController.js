@@ -615,5 +615,52 @@ exports.checkTransactionStatus = async (req, res) => {
   }
 };
 
+// UPDATE: Update payment status from pending to completed
+exports.updatePaymentStatus = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: "orderId is required",
+      });
+    }
+
+    // Find order
+    const order = await Order.findOne({ orderId });
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Update order status from pending to completed
+    const updatedOrder = await Order.findOneAndUpdate(
+      { orderId },
+      {
+        paymentStatus: "completed",
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Order status updated to completed",
+      orderId: orderId,
+      paymentStatus: updatedOrder.paymentStatus,
+    });
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update order status",
+      error: error.message,
+    });
+  }
+};
+
 // Deprecated: Old redirect endpoint (kept for backward compatibility)
 exports.payfastRedirect = exports.initializePayment;
