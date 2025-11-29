@@ -302,25 +302,65 @@ exports.payfastCallback = async (req, res) => {
   try {
     const pfData = req.body;
 
-    console.log("PayFast Callback received:", pfData);
+    // ==================== FIELD VALIDATION ====================
+    // Check for required fields
+    const requiredFields = [
+      'm_payment_id',      // Order ID
+      'pf_payment_id',     // PayFast transaction ID
+      'payment_status',    // COMPLETE, PENDING, FAILED
+      'signature',         // Signature for verification
+      'email_address'      // Customer email
+    ];
+
+    console.log("[PAYFAST CALLBACK] 🔍 VALIDATING REQUIRED FIELDS:");
+    const missingFields = [];
+
+    requiredFields.forEach(field => {
+      if (!pfData[field]) {
+        console.log(`[PAYFAST CALLBACK] ❌ MISSING FIELD: ${field}`);
+        missingFields.push(field);
+      } else {
+        console.log(`[PAYFAST CALLBACK] ✓ Field present: ${field} = ${pfData[field]}`);
+      }
+    });
+
+    // If any required fields are missing, reject the callback
+    if (missingFields.length > 0) {
+      console.log(`[PAYFAST CALLBACK] ❌ VALIDATION FAILED - Missing fields: ${missingFields.join(', ')}`);
+      return res.status(400).json({
+        message: "Invalid callback data",
+        missingFields: missingFields,
+        error: "Required fields missing from PayFast callback"
+      });
+    }
+
+    console.log("[PAYFAST CALLBACK] ✅ ALL REQUIRED FIELDS PRESENT");
+    // ==================== END FIELD VALIDATION ====================
 
     // Verify signature (your existing helper)
     const signatureVerified = verifySignature(pfData);
+    console.log("[PAYFAST CALLBACK] ✓ Signature Verified:", signatureVerified);
 
     // Find order
     const order = await Order.findOne({ orderId: pfData.m_payment_id });
+    console.log("[PAYFAST CALLBACK] 🔍 Looking for orderId:", pfData.m_payment_id);
     if (!order) {
+      console.log("[PAYFAST CALLBACK] ❌ Order not found for:", pfData.m_payment_id);
       return res.status(404).json({ message: "Order not found" });
     }
+    console.log("[PAYFAST CALLBACK] ✓ Order found:", order.orderId);
 
     // Determine payment status
     let paymentStatus = "failed";
     if (signatureVerified && pfData.payment_status === "COMPLETE") {
       paymentStatus = "completed";
+      console.log("[PAYFAST CALLBACK] ✓ Payment COMPLETED - Signature verified and status is COMPLETE");
     } else if (pfData.payment_status === "PENDING") {
       paymentStatus = "pending";
+      console.log("[PAYFAST CALLBACK] ⏳ Payment PENDING");
     } else if (pfData.payment_status === "FAILED") {
       paymentStatus = "failed";
+      console.log("[PAYFAST CALLBACK] ❌ Payment FAILED");
     }
 
     // Create/update payment record
@@ -331,11 +371,13 @@ exports.payfastCallback = async (req, res) => {
 
     let paymentRecord;
     if (existingPayment) {
+      console.log("[PAYFAST CALLBACK] 🔄 Updating existing payment record");
       existingPayment.payfastResponse = pfData;
       existingPayment.signatureVerified = signatureVerified;
       existingPayment.paymentStatus = paymentStatus;
       paymentRecord = await existingPayment.save();
     } else {
+      console.log("[PAYFAST CALLBACK] ➕ Creating new payment record");
       paymentRecord = new PaymentRecord({
         orderId: pfData.m_payment_id,
         payfastResponse: pfData,
@@ -345,18 +387,24 @@ exports.payfastCallback = async (req, res) => {
       });
       await paymentRecord.save();
     }
+    console.log("[PAYFAST CALLBACK] ✓ PaymentRecord saved successfully");
 
     // Update order status if payment successful / failed
     if (paymentStatus === "completed") {
+      console.log("[PAYFAST CALLBACK] 💾 Updating order status to PAID");
+      console.log("[PAYFAST CALLBACK] 🔑 Storing Transaction ID:", pfData.pf_payment_id);
       await Order.findOneAndUpdate(
         { orderId: pfData.m_payment_id },
         {
           paymentStatus: "paid",
+          transactionId: pfData.pf_payment_id,
           updatedAt: new Date(),
         },
         { new: true }
       );
+      console.log("[PAYFAST CALLBACK] ✓ Order updated to PAID with Transaction ID:", pfData.pf_payment_id);
     } else if (paymentStatus === "failed") {
+      console.log("[PAYFAST CALLBACK] 💾 Updating order status to FAILED");
       await Order.findOneAndUpdate(
         { orderId: pfData.m_payment_id },
         {
@@ -499,6 +547,116 @@ exports.cancelPayment = async (req, res) => {
     console.error("Error canceling payment:", error);
     res.status(500).json({
       message: "Failed to cancel payment",
+      error: error.message,
+    });
+  }
+};
+
+// READ: Check transaction status by basket_id (from PayFast official documentation)
+exports.checkTransactionStatus = async (req, res) => {
+  try {
+    const { basketId } = req.params;
+    const { orderDate } = req.query;
+
+    if (!basketId) {
+      return res.status(400).json({
+        success: false,
+        message: "basketId is required",
+      });
+    }
+
+    if (!orderDate) {
+      return res.status(400).json({
+        success: false,
+        message: "orderDate is required (format: YYYY-MM-DD)",
+      });
+    }
+
+    if (!PAYFAST_MERCHANT_ID || !PAYFAST_SECURED_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: "PAYFAST_MERCHANT_ID or PAYFAST_SECURED_KEY missing in environment",
+      });
+    }
+
+    // Build the PayFast API URL for transaction status check
+    const statusUrl = `${PAYFAST_BASE_URL}/transaction/basket_id/${basketId}?order_date=${orderDate}`;
+
+    console.log("[PAYFAST STATUS CHECK] Checking transaction status for basketId:", basketId);
+    console.log("[PAYFAST STATUS CHECK] URL:", statusUrl);
+
+    // Make request to PayFast API
+    const response = await axios.get(statusUrl, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "CallITStudio/1.0",
+      },
+      timeout: 15000,
+    });
+
+    console.log("[PAYFAST STATUS CHECK] Response received:", response.data);
+
+    // Return PayFast response
+    res.status(200).json({
+      success: true,
+      message: "Transaction status retrieved successfully",
+      basketId: basketId,
+      orderDate: orderDate,
+      payfastResponse: response.data,
+    });
+  } catch (error) {
+    console.error("[PAYFAST STATUS CHECK] Error:", error.message);
+    return res.status(error.response?.status || 500).json({
+      success: false,
+      message: "Failed to check transaction status",
+      error: error.response?.data || error.message,
+      basketId: req.params.basketId,
+    });
+  }
+};
+
+// UPDATE: Update payment status from pending to completed
+exports.updatePaymentStatus = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: "orderId is required",
+      });
+    }
+
+    // Find order
+    const order = await Order.findOne({ orderId });
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Update order status from pending to completed
+    const updatedOrder = await Order.findOneAndUpdate(
+      { orderId },
+      {
+        paymentStatus: "completed",
+        updatedAt: new Date(),
+      },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Order status updated to completed",
+      orderId: orderId,
+      paymentStatus: updatedOrder.paymentStatus,
+    });
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update order status",
       error: error.message,
     });
   }
